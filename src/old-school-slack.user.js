@@ -2,10 +2,10 @@
 // @name         Old School Slack
 // @namespace    https://github.com/blakegearin/old-school-slack
 // @version      0.0.1
-// @description  Update Slack to look & feel like the old design
+// @description  Updates Slack to look & feel like the old design
 // @author       Blake Gearin <hello@blakeg.me> (https://blakegearin.com)
 // @match        *://app.slack.com/*
-// @icon         https://raw.githubusercontent.com/blakegearin/old-school-slack/refs/heads/main/img/logo.png
+// @icon         https://raw.githubusercontent.com/blakegearin/old-school-slack/refs/heads/main/img/logo.svg
 // @supportURL   https://github.com/blakegearin/old-school-slack/issues
 // @license      GPL-3.0
 // @copyright    2023–2025, Blake Gearin (https://blakegearin.com)
@@ -48,7 +48,6 @@
           hide: true,
           createNavButton: false,
         },
-        // Note: Without home you'll need to use the back button to return when searching
         dms: {
           createNavButton: true,
         },
@@ -683,6 +682,33 @@
     historyNavigation.insertBefore(tabButton, historyNavigationFirstChild);
   }
 
+  function setModalOffsets() {
+    log(DEBUG, 'setModalOffsets()');
+
+    const modalStyle = document.createElement("style");
+
+    modalStyle.id = "oss-modal-offsets-style";
+    modalStyle.textContent += `
+      .ReactModal__Content:has([aria-label="More"][role="menu"])
+      {
+        margin-top: 32px !important;
+      }
+
+      .ReactModal__Content:has(.p-team_switcher_menu)
+      {
+        margin-top: -50px !important;
+        margin-left: 60px !important;
+      }
+
+      .ReactModal__Content:has([aria-label="More"][role="menu"]) .p-more_menu__container
+      {
+        max-height: 85vh;
+      }
+    `;
+
+    document.body.appendChild(modalStyle);
+  }
+
   function processTabUpdates({ tabListSelector, historyNavigationSelector, workspaceCount }) {
     log(DEBUG, 'processTabUpdates()');
 
@@ -705,16 +731,6 @@
       .oss-tab-button:first-child
       {
         margin-left: 7px !important;
-      }
-
-      .ReactModal__Content:has([aria-label="More"][role="menu"])
-      {
-        margin-top: 32px !important;
-      }
-
-      .ReactModal__Content:has([aria-label="More"][role="menu"]) .p-more_menu__container
-      {
-        max-height: 85vh;
       }
     `;
 
@@ -855,8 +871,9 @@
       }
     }
 
-
     if (CONFIG.sidebar.avatar.moveToNav) moveAvatar();
+
+    setModalOffsets();
 
     log(QUIET, "Finished");
   }

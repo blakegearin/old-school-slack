@@ -1,0 +1,6 @@
+node_modules/
+*.afdesign*
+/*.css
+/*.svg
+*.xcf
+*.vscode
