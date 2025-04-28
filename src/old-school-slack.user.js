@@ -28,6 +28,15 @@
     logLevel: QUIET,
     sidebar: {
       hide: false,
+      ifOneWorkspace: {
+        hideSidebar: true,
+        addWorkspaceButton: {
+          createNavButton: true,
+        },
+        homeTab: {
+          createNavButtonOnSearch: true,
+        }
+      },
       workspaceSwitcher: {
         hide: true,
         clickToGoHome: true,
@@ -164,31 +173,6 @@
     });
   }
 
-  function buildTabButton({ id, ariaLabel, svg, onClick }) {
-    const outerDiv = document.createElement('div');
-    outerDiv.id = id;
-    outerDiv.classList.add('p-ia4_history_menu_button', 'oss-tab-button');
-
-    const button = document.createElement('button');
-    button.classList.add('c-button-unstyled', 'p-ia4_history_menu_button__button');
-    button.setAttribute('data-qa', 'top-nav-history-menu');
-    button.setAttribute('aria-label', ariaLabel);
-    button.setAttribute('aria-disabled', 'false');
-    button.setAttribute('aria-haspopup', 'menu');
-    button.setAttribute('data-sk', 'tooltip_parent');
-    button.type = 'button';
-    button.tabIndex = 0;
-    button.innerHTML = svg.outerHTML;
-
-    // Add the click event listener
-    button.addEventListener('click', onClick);
-
-    // Append the button to the outer div
-    outerDiv.appendChild(button);
-
-    return outerDiv;
-  }
-
   function updateWorkspaceToGoHome() {
     const workspaceSwitcher = document.querySelector('.p-account_switcher');
     workspaceSwitcher.click();
@@ -227,6 +211,33 @@
 
     await closeWorkspaceSwitcherModal();
     style.remove();
+  }
+
+  async function getWorkspaceCount() {
+    log(SILENT, 'maybeHideWorkspaceSwitcher()');
+
+    const temporaryModalContentStyle = openWorkspaceSwitcherDiscretely();
+
+    const workspacesSelector = '.p_team-switcher-menu__item__team .p_team-switcher-menu__item__team';
+    await waitForElement(workspacesSelector);
+
+    const workspaceCount = document.querySelectorAll(workspacesSelector).length;
+    log(SILENT, 'workspaceCount', workspaceCount);
+
+    await closeWorkspaceSwitcherDiscretely(temporaryModalContentStyle);
+
+    return workspaceCount;
+  }
+
+  async function openAddWorkspaceDiscretely() {
+    const createWorkspaceButtonStyle = openWorkspaceSwitcherDiscretely();
+
+    const workspacesAddButtonSelector = '.p-team_switcher_menu__item--add';
+    await waitForElement(workspacesAddButtonSelector);
+
+    document.querySelector(workspacesAddButtonSelector).click();
+
+    await closeWorkspaceSwitcherDiscretely(createWorkspaceButtonStyle);
   }
 
   async function addWorkspaceButtons() {
@@ -347,14 +358,7 @@
     workspacesAddButton.classList.add('p-account_switcher');
 
     workspacesAddButton.addEventListener('click', async () => {
-      const createWorkspaceButtonStyle = openWorkspaceSwitcherDiscretely();
-
-      const workspacesAddButtonSelector = '.p-team_switcher_menu__item--add';
-      await waitForElement(workspacesAddButtonSelector);
-
-      document.querySelector(workspacesAddButtonSelector).click();
-
-      await closeWorkspaceSwitcherDiscretely(createWorkspaceButtonStyle);
+      await openAddWorkspaceDiscretely();
     });
 
     innerDiv.appendChild(workspacesAddButton);
@@ -593,7 +597,7 @@
         border-radius: 8px 0px 0px 8px;
       }
 
-      [role="toolbar"] > div:nth-child(2)
+      [aria-label="Control strip"][role="toolbar"] > div:nth-child(2)
       {
         display: none !important;
       }
@@ -636,7 +640,50 @@
     document.body.appendChild(highlightWorkspaceSwitcherStyle);
   }
 
-  function processTabUpdates({ tabListSelector, historyNavigationSelector }) {
+  function buildTabButton({ id, ariaLabel, svg, onClick }) {
+    const outerDiv = document.createElement('div');
+    outerDiv.id = id;
+    outerDiv.classList.add('p-ia4_history_menu_button', 'oss-tab-button');
+
+    const button = document.createElement('button');
+
+    button.classList.add('c-button-unstyled', 'p-ia4_history_menu_button__button');
+    button.setAttribute('data-qa', 'top-nav-history-menu');
+    button.setAttribute('aria-label', ariaLabel);
+    button.setAttribute('aria-disabled', 'false');
+    button.setAttribute('aria-haspopup', 'menu');
+    button.setAttribute('data-sk', 'tooltip_parent');
+    button.type = 'button';
+    button.tabIndex = 0;
+    button.innerHTML = svg.outerHTML;
+    button.addEventListener('click', onClick);
+
+    outerDiv.appendChild(button);
+
+    return outerDiv;
+  }
+
+  function addCreateWorkspaceButtonToNav(historyNavigationSelector) {
+    log(DEBUG, 'addCreateWorkspaceButtonToNav()');
+
+    const historyNavigation = document.querySelector(historyNavigationSelector);
+    const historyNavigationFirstChild = historyNavigation.firstChild;
+
+    const id = `oss-create-workspace-nav-tab`
+    const name = 'Create workspace';
+    const svg = document.querySelector('.p-control_strip__create_button__icon svg');
+    const onClick = async () => {
+      await openAddWorkspaceDiscretely();
+    };
+
+    const tabButtonParams = { id, name, svg, onClick };
+    log(INFO, 'tabButtonParams', tabButtonParams);
+
+    const tabButton = buildTabButton(tabButtonParams);
+    historyNavigation.insertBefore(tabButton, historyNavigationFirstChild);
+  }
+
+  function processTabUpdates({ tabListSelector, historyNavigationSelector, workspaceCount }) {
     log(DEBUG, 'processTabUpdates()');
 
     const tabButtonsStyle = document.createElement("style");
@@ -658,6 +705,16 @@
       .oss-tab-button:first-child
       {
         margin-left: 7px !important;
+      }
+
+      .ReactModal__Content:has([aria-label="More"][role="menu"])
+      {
+        margin-top: 32px !important;
+      }
+
+      .ReactModal__Content:has([aria-label="More"][role="menu"]) .p-more_menu__container
+      {
+        max-height: 85vh;
       }
     `;
 
@@ -688,35 +745,64 @@
         log(INFO, `Skipping tab: ${name}`);
         continue;
       } else {
+        let hiddenHomeButton = false;
+
+        if (
+          workspaceCount <= 1 &&
+          name === 'Home' &&
+          CONFIG.sidebar.ifOneWorkspace.homeTab.createNavButtonOnSearch
+        ) {
+          hiddenHomeButton = true;
+        }
 
         if (tabConfig.hide) {
           tab.classList.add(tabButtonHiddenClass);
           tabsHiddenCount++;
         }
 
-        if (tabConfig.createNavButton) {
-          const id = name + '-new';
-          const svg = tab.querySelector('svg');
+        if (!tabConfig.createNavButton && !hiddenHomeButton) continue;
 
-          // Watch for svg changes to reflect the selected tab
-          const observer = new MutationObserver(() => {
-            document.querySelector(`#${id} svg`).innerHTML = svg.outerHTML;
-          });
-          observer.observe(svg, { childList: true, subtree: true });
+        const id = `oss-${name}-nav-tab`;
+        const svg = tab.querySelector('svg');
 
-          const ariaLabel = tab.tagName === 'BUTTON' ? tab.ariaLabel : tab.querySelector('button').ariaLabel;
-          const buttonSelector = `.p-tab_rail button[aria-label="${ariaLabel}"]`;
-          const onClick = () => {
-            log(DEBUG, 'buttonSelector', buttonSelector);
-            document.querySelector(buttonSelector).click();
+        // Watch for svg changes to reflect the selected tab
+        const observer = new MutationObserver(() => {
+          document.querySelector(`#${id} svg`).innerHTML = svg.outerHTML;
+        });
+        observer.observe(svg, { childList: true, subtree: true });
+
+        const ariaLabel = tab.tagName === 'BUTTON' ? tab.ariaLabel : tab.querySelector('button').ariaLabel;
+        const buttonSelector = `.p-tab_rail button[aria-label="${ariaLabel}"]`;
+        const onClick = () => {
+          log(DEBUG, 'buttonSelector', buttonSelector);
+          document.querySelector(buttonSelector).click();
+        };
+
+        const tabButtonParams = { id, name, svg, onClick };
+        log(INFO, 'tabButtonParams', tabButtonParams);
+
+        const tabButton = buildTabButton(tabButtonParams);
+        if (hiddenHomeButton) {
+          const setDisplay = () => {
+            log(SILENT, 'setDisplay()');
+
+            const searching = window.location.href.endsWith('/search');
+            const display = searching ? 'flex' : 'none';
+            tabButton.style.display = display;
           };
 
-          const tabButtonParams = { id, name, svg, onClick };
-          log(INFO, 'tabButtonParams', tabButtonParams);
+          setDisplay();
 
-          const tabButton = buildTabButton(tabButtonParams);
-          historyNavigation.insertBefore(tabButton, historyNavigationFirstChild);
+          const observer = new MutationObserver(function(mutations) {
+            mutations.forEach(function(mutation) {
+              if (mutation.type === 'childList' || mutation.type === 'characterData') setDisplay();
+            });
+          });
+
+          observer.observe(document.body, { childList: true, subtree: true, characterData: true });
         }
+
+        historyNavigation.insertBefore(tabButton, historyNavigationFirstChild);
       }
     }
 
@@ -741,15 +827,34 @@
     await waitForElement(tabListSelector);
     await waitForElement(historyNavigationSelector);
 
-    processTabUpdates({ tabListSelector, historyNavigationSelector });
+    const workspaceCount = await getWorkspaceCount();
+    processTabUpdates({ tabListSelector, historyNavigationSelector, workspaceCount });
 
     if (!CONFIG.sidebar.hide) {
-      if (CONFIG.sidebar.workspaceSwitcher.clickToGoHome) updateWorkspaceToGoHome();
-      if (CONFIG.sidebar.workspaceSwitcher.addOtherWorkspaceButtons) addWorkspaceButtons();
+      let sidebarHidden = false;
 
-      if (CONFIG.sidebar.createButton.hide) hideCreateButton();
-      else if (CONFIG.sidebar.createButton.moveUp) moveCreateButton();
+      log(DEBUG, 'workspaceCount', workspaceCount);
+
+      if (workspaceCount <= 1) {
+        if (CONFIG.sidebar.ifOneWorkspace.hideSidebar) {
+          hideSidebar();
+          sidebarHidden = true;
+        }
+
+        if (CONFIG.sidebar.ifOneWorkspace.addWorkspaceButton.createNavButton) {
+          addCreateWorkspaceButtonToNav(historyNavigationSelector);
+        }
+      }
+
+      if (!sidebarHidden) {
+        if (CONFIG.sidebar.workspaceSwitcher.clickToGoHome) updateWorkspaceToGoHome();
+        if (CONFIG.sidebar.workspaceSwitcher.addOtherWorkspaceButtons) addWorkspaceButtons();
+
+        if (CONFIG.sidebar.createButton.hide) hideCreateButton();
+        else if (CONFIG.sidebar.createButton.moveUp) moveCreateButton();
+      }
     }
+
 
     if (CONFIG.sidebar.avatar.moveToNav) moveAvatar();
 
