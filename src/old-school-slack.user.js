@@ -30,12 +30,14 @@
       hide: false,
       workspaceSwitcher: {
         hide: true,
+        clickToGoHome: true,
         highlight: true,
+        addOtherWorkspaceButtons: true,
       },
       tabs: {
         home: {
           hide: true,
-          createNavButton: true,
+          createNavButton: false,
         },
         // Note: Without home you'll need to use the back button to return when searching
         dms: {
@@ -75,7 +77,8 @@
         },
       },
       createButton: {
-        moveUp: true,
+        hide: true,
+        moveUp: false,
       },
       avatar: {
         moveToNav: true,
@@ -186,6 +189,178 @@
     return outerDiv;
   }
 
+  function updateWorkspaceToGoHome() {
+    const workspaceSwitcher = document.querySelector('.p-account_switcher');
+    workspaceSwitcher.click();
+    workspaceSwitcher.addEventListener('click', async () => {
+      const buttonSelector = `.p-tab_rail button[aria-label="Home"]`;
+      document.querySelector(buttonSelector).click();
+
+      await closeWorkspaceSwitcherModal();
+    });
+  }
+
+  async function closeWorkspaceSwitcherModal() {
+    const modalOverlaySelector = '.ReactModal__Overlay';
+    await waitForElement(modalOverlaySelector);
+    document.querySelector(modalOverlaySelector)?.click();
+  }
+
+  function openWorkspaceSwitcherDiscretely() {
+    log(DEBUG, 'openWorkspaceSwitcherDiscretely()');
+
+    // Temporarily hide the workspace switcher modal
+    const style = document.createElement("style");
+    style.id = "oss-temporary-modal-content-style";
+    style.textContent += `.ReactModal__Content { display: none !important; }`;
+    document.body.appendChild(style);
+
+    // Open the workspace switcher modal
+    const originalWorkspaceSwitcher = document.querySelector('.p-account_switcher');
+    originalWorkspaceSwitcher.click();
+
+    return style;
+  }
+
+  async function closeWorkspaceSwitcherDiscretely(style) {
+    log(DEBUG, 'closeWorkspaceSwitcherDiscretely()');
+
+    await closeWorkspaceSwitcherModal();
+    style.remove();
+  }
+
+  async function addWorkspaceButtons() {
+    log(DEBUG, 'addWorkspaceButtons()');
+
+    const temporaryModalContentStyle = openWorkspaceSwitcherDiscretely();
+
+    const workspacesSelector = '.p_team-switcher-menu__item__team .p_team-switcher-menu__item__team';
+    await waitForElement(workspacesSelector);
+
+    const workspaceDivs = Array.from(document.querySelectorAll(workspacesSelector));
+    // Remove the first element, which is the current workspace
+    workspaceDivs.shift();
+
+    const workspaceMetadata = [];
+
+    for (const workspaceDiv of workspaceDivs) {
+      const icon = workspaceDiv.querySelector('.p-account_switcher__row_icon');
+      const url = workspaceDiv.querySelector('.p-account_switcher__row_url').textContent;
+
+      workspaceMetadata.push({ icon, url });
+    }
+
+    log(DEBUG, 'workspaceMetadata', workspaceMetadata);
+
+    await closeWorkspaceSwitcherDiscretely(temporaryModalContentStyle);
+
+    const addWorkspaceButtonStyle = document.createElement("style");
+    addWorkspaceButtonStyle.id = "oss-add-workspace-button-style";
+    addWorkspaceButtonStyle.textContent += `
+      .p-tab_rail:has([data-qa="ellipsis-vertical-filled"]) .c-team_icon
+      {
+        height: 24px !important;
+        width: 24px !important;
+        min-width: auto !important;
+      }
+
+      .p-tab_rail:has([data-qa="ellipsis-vertical-filled"]) [role="tablist"] > div:last-child .p-tab_rail__button
+      {
+        margin-bottom: 0px !important;
+      }
+
+      .p-tab_rail .p-team_switcher_menu__item--add
+      {
+        padding: 0px !important;
+      }
+
+      .p-tab_rail .p-add_team_label > div:nth-child(2)
+      {
+        display: none !important;
+      }
+
+      #oss-create-workspace-button
+      {
+        display: flex !important;
+      }
+
+      .active-managed-focus-container .p-control_strip__circle_button
+      {
+        background-color: transparent;
+      }
+      .active-managed-focus-container .p-control_strip__circle_button:active
+      {
+        background-color: revert !important;
+      }
+    `;
+    document.body.appendChild(addWorkspaceButtonStyle);
+
+    const thirdElementInTabRail = document.querySelector('.p-tab_rail > div:nth-child(3)')
+    log(QUIET, 'thirdElementInTabRail', thirdElementInTabRail);
+
+    const tabRail = thirdElementInTabRail.parentElement;
+
+    function buildTabRailDiv() {
+      const tabRailDiv = document.createElement('div');
+
+      tabRailDiv.classList.add('active-managed-focus-container');
+      tabRailDiv.role = 'none';
+      tabRailDiv.style.display = 'contents';
+
+      const peekTriggerDiv = document.createElement('div');
+      peekTriggerDiv.classList.add('p-peek_trigger');
+      peekTriggerDiv.role = 'none';
+
+      const peekTriggerDivInner = document.createElement('div');
+
+      peekTriggerDiv.appendChild(peekTriggerDivInner);
+      tabRailDiv.appendChild(peekTriggerDiv);
+
+      return [tabRailDiv, peekTriggerDivInner];
+    };
+
+    for (const workspace of workspaceMetadata) {
+      const [workspaceDiv, innerDiv] = buildTabRailDiv();
+
+      const button = document.createElement('button');
+      button.classList.add('c-button-unstyled', 'p-account_switcher', 'oss-account_switcher');
+      button.innerHTML = workspace.icon.outerHTML;
+
+      button.setAttribute('aria-label', 'Switch workspaces… (Bernie Slack) ');
+
+      button.addEventListener('click', () => {
+        window.location.href = `https://${workspace.url}`;
+      });
+
+      innerDiv.appendChild(button);
+      tabRail.insertBefore(workspaceDiv, thirdElementInTabRail);
+    }
+
+    const [workspaceAddDiv, innerDiv] = buildTabRailDiv();
+
+    const controlStripCreateButtonSelector = '.p-client_workspace__layout .p-control_strip[role="toolbar"] .p-control_strip__create_button';
+    const controlStripCreateButton = document.querySelector(controlStripCreateButtonSelector);
+    const workspacesAddButton = controlStripCreateButton.cloneNode(true);
+    log(DEBUG, 'workspacesAddButton', workspacesAddButton);
+
+    workspacesAddButton.id = 'oss-create-workspace-button';
+    workspacesAddButton.classList.add('p-account_switcher');
+
+    workspacesAddButton.addEventListener('click', async () => {
+      const createWorkspaceButtonStyle = openWorkspaceSwitcherDiscretely();
+
+      const workspacesAddButtonSelector = '.p-team_switcher_menu__item--add';
+      await waitForElement(workspacesAddButtonSelector);
+
+      document.querySelector(workspacesAddButtonSelector).click();
+
+      await closeWorkspaceSwitcherDiscretely(createWorkspaceButtonStyle);
+    });
+
+    innerDiv.appendChild(workspacesAddButton);
+    tabRail.insertBefore(workspaceAddDiv, thirdElementInTabRail);
+  }
+
   async function moveCreateButton() {
     log(DEBUG, 'moveCreateButton()');
 
@@ -207,9 +382,14 @@
           position: relative;
         }
 
-        .p-tab_rail
+        .c-tabs__tab_content:first-child
         {
-          row-gap: 6px;
+          padding-top: 0px !important;
+        }
+
+        .p-control_strip
+        {
+          padding: 0px !important;
         }
       `;
 
@@ -220,7 +400,7 @@
     const controlStripToolbar = document.querySelector(controlStripToolbarSelector);
     log(DEBUG, 'controlStripToolbar', controlStripToolbar);
 
-    const controlStripToolbarId = 'control-strip-toolbar-new';
+    const controlStripToolbarId = 'oss-control-strip-toolbar-moved';
     document.getElementById(controlStripToolbarId)?.remove();
     controlStripToolbar.id = controlStripToolbarId;
 
@@ -229,6 +409,22 @@
     // Wait for a new instance to appear, which happens on tab change
     await waitForElement(controlStripToolbarSelector);
     moveCreateButton();
+  }
+
+  function hideCreateButton() {
+    log(DEBUG, 'hideCreateButton()');
+
+    const hideCreateButtonStyle = document.createElement("style");
+    hideCreateButtonStyle.id = "oss-hide-create-button-style";
+
+    hideCreateButtonStyle.textContent += `
+      [role="toolbar"] .p-control_strip__create_button
+      {
+        display: none !important;
+      }
+    `;
+
+    document.body.appendChild(hideCreateButtonStyle);
   }
 
   function squareOffWorkspace() {
@@ -266,6 +462,11 @@
       {
         border-top: 1px solid var(--dt_color-otl-ter) !important;
         padding-top: 15px;
+      }
+
+      .p-client_workspace__layout .p-control_strip[role="toolbar"]
+      {
+        padding-bottom: 15px !important;
       }
     `;
 
@@ -391,6 +592,11 @@
         opacity: 0.25;
         border-radius: 8px 0px 0px 8px;
       }
+
+      [role="toolbar"] > div:nth-child(2)
+      {
+        display: none !important;
+      }
     `;
 
     document.body.appendChild(moveAvatarStyle);
@@ -403,16 +609,25 @@
     highlightWorkspaceSwitcherStyle.id = "oss-highlight-workspace-switcher-style";
 
     highlightWorkspaceSwitcherStyle.textContent += `
-      .p-account_switcher
+      .p-tab_rail:has([data-qa="ellipsis-horizontal-filled"]) > div:first-child .p-account_switcher
       {
-        border-radius: clamp(var(--dt_static_radius-base), min(22.222%, var(--dt_static_radius-xlarge)), var(--dt_static_radius-xlarge));
-
-        box-shadow: 0px 0px 0px 2pt white;
+        position: relative;
         height: 40px;
         width: 40px;
+        border-radius: clamp(var(--dt_static_radius-base), min(22.222%, var(--dt_static_radius-xlarge)), var(--dt_static_radius-xlarge));
+        box-shadow: 0px 0px 0px 2pt white;
       }
 
-      .p-account_switcher i
+      .p-tab_rail > div:first-child .p-account_switcher
+      {
+        position: relative;
+        height: 28px;
+        width: 28px;
+        border-radius: clamp(var(--dt_static_radius-base), min(22.222%, var(--dt_static_radius-xlarge)), var(--dt_static_radius-xlarge));
+        box-shadow: 0px 0px 0px 1.5pt white;
+      }
+
+      .p-tab_rail > div:first-child .p-account_switcher i
       {
         margin: 2px;
       }
@@ -427,7 +642,13 @@
     const tabButtonsStyle = document.createElement("style");
     tabButtonsStyle.id = "oss-tab-buttons-style";
 
-    tabButtonsStyle.innerHTML = `
+    const tabButtonHiddenClass = 'oss-tab-button-hidden';
+    tabButtonsStyle.textContent = `
+      .${tabButtonHiddenClass}
+      {
+        display: none !important;
+      }
+
       .oss-tab-button
       {
         margin-left: 4px !important;
@@ -454,6 +675,7 @@
 
     // Find the first child before inserts occur
     const historyNavigationFirstChild = historyNavigation.firstChild;
+    let tabsHiddenCount = 0;
 
     for (let tab of tabListDiv.children) {
       log(INFO, 'tab', tab);
@@ -467,7 +689,10 @@
         continue;
       } else {
 
-        if (tabConfig.hide) tab.style.cssText = 'display: none !important;';
+        if (tabConfig.hide) {
+          tab.classList.add(tabButtonHiddenClass);
+          tabsHiddenCount++;
+        }
 
         if (tabConfig.createNavButton) {
           const id = name + '-new';
@@ -482,7 +707,7 @@
           const ariaLabel = tab.tagName === 'BUTTON' ? tab.ariaLabel : tab.querySelector('button').ariaLabel;
           const buttonSelector = `.p-tab_rail button[aria-label="${ariaLabel}"]`;
           const onClick = () => {
-            log(INFO, 'buttonSelector', buttonSelector);
+            log(DEBUG, 'buttonSelector', buttonSelector);
             document.querySelector(buttonSelector).click();
           };
 
@@ -494,6 +719,13 @@
         }
       }
     }
+
+    let allTabsHidden = tabsHiddenCount === tabListDiv.children.length;
+    log(DEBUG, 'tabsHiddenCount', tabsHiddenCount);
+    log(DEBUG, 'tabListDiv.children.length', tabListDiv.children.length);
+    log(DEBUG, 'allTabsHidden', allTabsHidden);
+
+    if (allTabsHidden) tabButtonsStyle.textContent += `.p-tab_rail > div:nth-child(2) { display: none !important; }`;
   }
 
   async function applyCustomizations() {
@@ -511,7 +743,14 @@
 
     processTabUpdates({ tabListSelector, historyNavigationSelector });
 
-    if (CONFIG.sidebar.createButton.moveUp) moveCreateButton();
+    if (!CONFIG.sidebar.hide) {
+      if (CONFIG.sidebar.workspaceSwitcher.clickToGoHome) updateWorkspaceToGoHome();
+      if (CONFIG.sidebar.workspaceSwitcher.addOtherWorkspaceButtons) addWorkspaceButtons();
+
+      if (CONFIG.sidebar.createButton.hide) hideCreateButton();
+      else if (CONFIG.sidebar.createButton.moveUp) moveCreateButton();
+    }
+
     if (CONFIG.sidebar.avatar.moveToNav) moveAvatar();
 
     log(QUIET, "Finished");
