@@ -5,7 +5,7 @@
 // @description  Updates Slack to look & feel like the old design
 // @author       Blake Gearin <hello@blakeg.me> (https://blakegearin.com)
 // @match        *://app.slack.com/*
-// @icon         https://raw.githubusercontent.com/blakegearin/old-school-slack/refs/heads/main/img/logo.svg
+// @icon         https://raw.githubusercontent.com/blakegearin/old-school-slack/refs/heads/main/img/logo.png
 // @supportURL   https://github.com/blakegearin/old-school-slack/issues
 // @license      GPL-3.0
 // @copyright    2023–2025, Blake Gearin (https://blakegearin.com)
