@@ -45,8 +45,7 @@ To help maintain this project and in the spirit of aiding future developers, the
 This was built with long-term maintenance in mind.
 
 - Minimizing DOM traversal
-- Adding unique IDs to relevant HTML elements that don't have good selectors
-- Logging errors cleanly
+- Clean logging with levels
 
 ## Background
 
