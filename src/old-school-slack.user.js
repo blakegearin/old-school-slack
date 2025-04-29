@@ -11,8 +11,10 @@
 // @copyright    2023–2025, Blake Gearin (https://blakegearin.com)
 // ==/UserScript==
 
+/* global Promise */
+
 (function () {
-  "use strict";
+  'use strict';
 
   const VERSION = '0.0.1';
   const USERSCRIPT_NAME = 'Old School Slack';
@@ -35,7 +37,7 @@
         },
         homeTab: {
           createNavButtonOnSearch: true,
-        }
+        },
       },
       workspaceSwitcher: {
         hide: true,
@@ -98,7 +100,7 @@
     workspace: {
       squareOff: true,
     },
-  }
+  };
 
   const LOG_LEVELS = {
     getName: (level) => {
@@ -140,17 +142,6 @@
     console.groupEnd();
   }
 
-  function logError (message, error = undefined) {
-    const log = `[${VERSION}] [error] ${USERSCRIPT_NAME}: ${message}`;
-
-    console.groupCollapsed(log);
-
-    if (error !== undefined) console.error(error);
-
-    console.trace();
-    console.groupEnd();
-  }
-
   log(QUIET, 'Starting');
 
   // Source: https://stackoverflow.com/a/61511955/5988852
@@ -160,7 +151,7 @@
         return resolve(document.querySelector(selector));
       }
 
-      const observer = new MutationObserver(mutations => {
+      const observer = new MutationObserver(() => {
         if (document.querySelector(selector)) {
           observer.disconnect();
           resolve(document.querySelector(selector));
@@ -170,7 +161,7 @@
       // If you get "parameter 1 is not of type 'Node'" error, see https://stackoverflow.com/a/77855838/492336
       observer.observe(document.body, {
         childList: true,
-        subtree: true
+        subtree: true,
       });
     });
   }
@@ -179,7 +170,7 @@
     const workspaceSwitcher = document.querySelector('.p-account_switcher');
     workspaceSwitcher.click();
     workspaceSwitcher.addEventListener('click', async () => {
-      const buttonSelector = `.p-tab_rail button[aria-label="Home"]`;
+      const buttonSelector = '.p-tab_rail button[aria-label="Home"]';
       document.querySelector(buttonSelector).click();
 
       await closeWorkspaceSwitcherModal();
@@ -187,7 +178,7 @@
   }
 
   async function closeWorkspaceSwitcherModal() {
-    const modalOverlay = await waitForElement('.ReactModal__Overlay')
+    const modalOverlay = await waitForElement('.ReactModal__Overlay');
     modalOverlay?.click();
   }
 
@@ -195,9 +186,9 @@
     log(DEBUG, 'openWorkspaceSwitcherDiscretely()');
 
     // Temporarily hide the workspace switcher modal
-    const style = document.createElement("style");
-    style.id = "oss-temporary-modal-content-style";
-    style.textContent += `.ReactModal__Content { display: none !important; }`;
+    const style = document.createElement('style');
+    style.id = 'oss-temporary-modal-content-style';
+    style.textContent += '.ReactModal__Content { display: none !important; }';
     document.body.appendChild(style);
 
     // Open the workspace switcher modal
@@ -264,8 +255,8 @@
 
     await closeWorkspaceSwitcherDiscretely(temporaryModalContentStyle);
 
-    const addWorkspaceButtonStyle = document.createElement("style");
-    addWorkspaceButtonStyle.id = "oss-add-workspace-button-style";
+    const addWorkspaceButtonStyle = document.createElement('style');
+    addWorkspaceButtonStyle.id = 'oss-add-workspace-button-style';
     addWorkspaceButtonStyle.textContent += `
       .p-tab_rail:has([data-qa="ellipsis-vertical-filled"]) .c-team_icon
       {
@@ -305,7 +296,7 @@
     `;
     document.body.appendChild(addWorkspaceButtonStyle);
 
-    const thirdElementInTabRail = document.querySelector('.p-tab_rail > div:nth-child(3)')
+    const thirdElementInTabRail = document.querySelector('.p-tab_rail > div:nth-child(3)');
     log(DEBUG, 'thirdElementInTabRail', thirdElementInTabRail);
 
     const tabRail = thirdElementInTabRail.parentElement;
@@ -327,7 +318,7 @@
       tabRailDiv.appendChild(peekTriggerDiv);
 
       return [tabRailDiv, peekTriggerDivInner];
-    };
+    }
 
     for (const workspace of workspaceMetadata) {
       const [workspaceDiv, innerDiv] = buildTabRailDiv();
@@ -372,7 +363,7 @@
 
     const moveUpControlStripStyleId = 'oss-move-create-button-style';
     if (!document.getElementById(moveUpControlStripStyleId)) {
-      const moveUpControlStripStyle = document.createElement("style");
+      const moveUpControlStripStyle = document.createElement('style');
       moveUpControlStripStyle.id = moveUpControlStripStyleId;
 
       moveUpControlStripStyle.textContent += `
@@ -419,8 +410,8 @@
   function hideCreateButton() {
     log(DEBUG, 'hideCreateButton()');
 
-    const hideCreateButtonStyle = document.createElement("style");
-    hideCreateButtonStyle.id = "oss-hide-create-button-style";
+    const hideCreateButtonStyle = document.createElement('style');
+    hideCreateButtonStyle.id = 'oss-hide-create-button-style';
 
     hideCreateButtonStyle.textContent += `
       [role="toolbar"] .p-control_strip__create_button
@@ -435,8 +426,8 @@
   function squareOffWorkspace() {
     log(DEBUG, 'squareOffWorkspace()');
 
-    const squareOffWorkspaceStyle = document.createElement("style");
-    squareOffWorkspaceStyle.id = "oss-expand-workspace-to-edge";
+    const squareOffWorkspaceStyle = document.createElement('style');
+    squareOffWorkspaceStyle.id = 'oss-expand-workspace-to-edge';
 
     squareOffWorkspaceStyle.textContent += `
       .p-client_workspace
@@ -481,8 +472,8 @@
   function hideSidebar() {
     log(DEBUG, 'hideSidebar()');
 
-    const hideSidebarStyle = document.createElement("style");
-    hideSidebarStyle.id = "oss-hide-sidebar-style";
+    const hideSidebarStyle = document.createElement('style');
+    hideSidebarStyle.id = 'oss-hide-sidebar-style';
 
     hideSidebarStyle.textContent += `
       .p-tab_rail
@@ -507,9 +498,9 @@
   async function moveAvatar(avatarDiv = null) {
     log(DEBUG, 'moveAvatar()');
 
-    const moveAvatarStyleId = "oss-move-avatar-style";
+    const moveAvatarStyleId = 'oss-move-avatar-style';
     if (!document.getElementById(moveAvatarStyleId)) {
-      const moveAvatarStyle = document.createElement("style");
+      const moveAvatarStyle = document.createElement('style');
       moveAvatarStyle.id = moveAvatarStyleId;
 
       moveAvatarStyle.textContent += `
@@ -608,7 +599,7 @@
     avatarDiv.id = avatarId;
     log(DEBUG, 'avatarDiv', avatarDiv);
 
-    const rightNav = document.querySelector(".p-ia4_top_nav__right_container");
+    const rightNav = document.querySelector('.p-ia4_top_nav__right_container');
     rightNav.appendChild(avatarDiv);
 
     // Wait for a new instance to appear, which happens on tab change
@@ -619,8 +610,8 @@
   function highlightWorkspaceSwitcher() {
     log(DEBUG, 'highlightWorkspaceSwitcher()');
 
-    const highlightWorkspaceSwitcherStyle = document.createElement("style");
-    highlightWorkspaceSwitcherStyle.id = "oss-highlight-workspace-switcher-style";
+    const highlightWorkspaceSwitcherStyle = document.createElement('style');
+    highlightWorkspaceSwitcherStyle.id = 'oss-highlight-workspace-switcher-style';
 
     highlightWorkspaceSwitcherStyle.textContent += `
       .p-tab_rail:has([data-qa="ellipsis-horizontal-filled"]) > div:first-child .p-account_switcher
@@ -678,7 +669,7 @@
 
     const historyNavigationFirstChild = historyNavigationDiv.firstChild;
 
-    const id = `oss-create-workspace-nav-tab`
+    const id = 'oss-create-workspace-nav-tab';
     const name = 'Create workspace';
     const svg = document.querySelector('.p-control_strip__create_button__icon svg');
     const onClick = async () => {
@@ -695,9 +686,9 @@
   function setModalOffsets() {
     log(DEBUG, 'setModalOffsets()');
 
-    const modalStyle = document.createElement("style");
+    const modalStyle = document.createElement('style');
 
-    modalStyle.id = "oss-modal-offsets-style";
+    modalStyle.id = 'oss-modal-offsets-style';
     modalStyle.textContent += `
       .ReactModal__Content:has([aria-label="More"][role="menu"])
       {
@@ -722,8 +713,8 @@
   function processTabUpdates({ tabListDiv, historyNavigationDiv, workspaceCount }) {
     log(DEBUG, 'processTabUpdates()');
 
-    const tabButtonsStyle = document.createElement("style");
-    tabButtonsStyle.id = "oss-tab-buttons-style";
+    const tabButtonsStyle = document.createElement('style');
+    tabButtonsStyle.id = 'oss-tab-buttons-style';
 
     const tabButtonHiddenClass = 'oss-tab-button-hidden';
     tabButtonsStyle.textContent = `
@@ -814,7 +805,7 @@
 
           setDisplay();
 
-          const observer = new MutationObserver(function(mutations) {
+          const observer = new MutationObserver((mutations) => {
             mutations.forEach(function(mutation) {
               if (mutation.type === 'childList' || mutation.type === 'characterData') setDisplay();
             });
@@ -832,7 +823,7 @@
     log(DEBUG, 'tabListDiv.children.length', tabListDiv.children.length);
     log(DEBUG, 'allTabsHidden', allTabsHidden);
 
-    if (allTabsHidden) tabButtonsStyle.textContent += `.p-tab_rail > div:nth-child(2) { display: none !important; }`;
+    if (allTabsHidden) tabButtonsStyle.textContent += '.p-tab_rail > div:nth-child(2) { display: none !important; }';
   }
 
   async function applyCustomizations() {
@@ -877,7 +868,7 @@
 
     setModalOffsets();
 
-    log(QUIET, "Finished");
+    log(QUIET, 'Finished');
   }
 
   void applyCustomizations();

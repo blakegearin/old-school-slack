@@ -1,0 +1,14 @@
+{
+  "main": "src/old-school-slack.user.js",
+  "scripts": {
+    "lint": "eslint src/old-school-slack.user.js",
+    "clean": "eslint --fix src/old-school-slack.user.js",
+    "fix": "npm run clean && git add src/old-school-slack.user.js",
+    "prepare": "husky install"
+  },
+  "devDependencies": {
+    "eslint": "^8.52.0",
+    "eslint-plugin-userscripts": "^0.4.0",
+    "husky": "^8.0.3"
+  }
+}
