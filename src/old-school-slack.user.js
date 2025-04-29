@@ -720,7 +720,7 @@
     tabButtonsStyle.textContent = `
       .${tabButtonHiddenClass}
       {
-        visibility: hidden !important;
+        display: none !important;
       }
 
       .oss-tab-button
@@ -741,6 +741,8 @@
     const historyNavigationFirstChild = historyNavigationDiv.firstChild;
     let tabsHiddenCount = 0;
 
+    let hiddenHomeButton = null;
+
     for (let tab of tabListDiv.children) {
       log(DEBUG, 'tab', tab);
 
@@ -752,7 +754,7 @@
         log(INFO, 'Not creating nav button for tab', name);
         continue;
       } else {
-        let hiddenHomeButton = false;
+        let hideButton = false;
 
         if (
           name === 'Home' &&
@@ -764,7 +766,7 @@
             )
           )
         ) {
-          hiddenHomeButton = true;
+          hideButton = true;
         }
 
         if (tabConfig.hide) {
@@ -772,7 +774,7 @@
           tabsHiddenCount++;
         }
 
-        if (!tabConfig.createNavButton && !hiddenHomeButton) continue;
+        if (!tabConfig.createNavButton && !hideButton) continue;
 
         const id = `oss-${name}-nav-tab`;
         const svg = tab.querySelector('svg');
@@ -794,11 +796,11 @@
         log(DEBUG, 'tabButtonParams', tabButtonParams);
 
         const tabButton = buildTabButton(tabButtonParams);
-        if (hiddenHomeButton) {
+        if (hideButton) {
           const setDisplay = () => {
-            log(DEBUG, 'setDisplay()');
+            log(SILENT, 'setDisplay()');
 
-            const searching = window.location.href.endsWith('/search');
+            const searching = window.location.href.includes('/search');
             const visibility = searching ? 'visible' : 'hidden';
             tabButton.style.visibility = visibility;
           };
@@ -812,10 +814,15 @@
           });
 
           observer.observe(document.body, { childList: true, subtree: true, characterData: true });
-        }
 
-        historyNavigationDiv.insertBefore(tabButton, historyNavigationFirstChild);
+          hiddenHomeButton = tabButton;
+        } else {
+          historyNavigationDiv.insertBefore(tabButton, historyNavigationFirstChild);
+        }
       }
+
+      // Add the hidden home button to the end since it's displayed but not visible
+      if (hiddenHomeButton) historyNavigationDiv.insertBefore(hiddenHomeButton, historyNavigationFirstChild);
     }
 
     let allTabsHidden = tabsHiddenCount === tabListDiv.children.length;
