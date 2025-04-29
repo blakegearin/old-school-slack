@@ -10,18 +10,35 @@
 
 # Old School Slack
 
+![Dynamic JSON Badge](https://img.shields.io/badge/dynamic/json?url=https%3A%2F%2Fgreasyfork.org%2Fscripts%2F534329-old-school-slack.json&query=total_installs&suffix=%20installs&label=greasy%20fork&color=%23670000)
+![Dynamic JSON Badge](https://img.shields.io/badge/dynamic/json?url=https%3A%2F%2Fopenuserjs.org%2Fmeta%2Fblakegearin%2FOld_School_Slack.meta.json&query=%24.OpenUserJS.installs%5B0%5D.value&suffix=%20installs&label=openuserjs&color=%23202d3b)
 [![License: GPL v3](https://img.shields.io/badge/license-GPLv3-blue.svg)](LICENSE)
 
 This is a [userscript](https://openuserjs.org/about/Userscript-Beginners-HOWTO) that updates Slack to look & feel like the old design.
 
+<p>
+  <img
+    width="49%"
+    src="img/screenshots/single-workspace.png"
+    alt="Slack interface with only one workspace"
+    title="Slack interface with only one workspace"
+  />
+  <img
+    width="49%"
+    src="img/screenshots/multiple-workspaces.png"
+    alt="Slack interface with multiple workspaces"
+    title="Slack interface with multiple workspaces"
+  />
+</p>
+
 ## Features
 
-- Works out of the box with sensible defaults
-- Fills in the gaps between the old and new design (e.g. navigating home from search)
-- Cleanly handles sidebar with only icons or icons & text
-- Ensures modal dialogs are positioned to keep elements in view
-- Preserves visual balance with uniform spacing
-- Granular configuration options for deep customization
+- [x] Works out of the box with sensible defaults
+- [x] Fills in the gaps between the old and new design (e.g. navigating home from search)
+- [x] Cleanly handles sidebar with only icons or icons & text
+- [x] Ensures modal dialogs are positioned to keep elements in view
+- [x] Preserves visual balance with uniform spacing
+- [x] Granular configuration options for deep customization
 
 ## Usage
 
@@ -53,8 +70,6 @@ In August 2023, Slack announced and began rolling out a [redesign](https://slack
 
 ## Credit
 
-- Archiving
-
-  - Formatter: [Web Formatter](https://webformatter.com/html)
+- Archiving formatter: [Web Formatter](https://webformatter.com/html)
 
 Not affiliated with Slack Technologies LLC, Salesforce, Inc., or any of their affiliations.
