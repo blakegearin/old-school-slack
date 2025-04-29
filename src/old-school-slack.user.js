@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Old School Slack
 // @namespace    https://github.com/blakegearin/old-school-slack
-// @version      0.1.0
+// @version      0.1.1
 // @description  Updates Slack to look & feel like the old design
 // @author       Blake Gearin <hello@blakeg.me> (https://blakegearin.com)
 // @match        *://app.slack.com/*
@@ -17,7 +17,7 @@
 (function () {
   'use strict';
 
-  const VERSION = '0.1.0';
+  const VERSION = '0.1.1';
   const USERSCRIPT_NAME = 'Old School Slack';
 
   const SILENT = 0;
