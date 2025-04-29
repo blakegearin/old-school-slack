@@ -7,10 +7,11 @@
 // @match        *://app.slack.com/*
 // @icon         https://raw.githubusercontent.com/blakegearin/old-school-slack/refs/heads/main/img/logo.png
 // @supportURL   https://github.com/blakegearin/old-school-slack/issues
-// @license      GPL-3.0
+// @license      GPL-3.0-only
 // @copyright    2023–2025, Blake Gearin (https://blakegearin.com)
 // ==/UserScript==
 
+/* jshint esversion: 11 */
 /* global Promise */
 
 (function () {
@@ -52,7 +53,7 @@
           createNavButtonOnSearch: true,
         },
         dms: {
-          createNavButton: true,
+          createNavButton: false,
         },
         activity: {
           hide: true,
@@ -342,7 +343,7 @@
     // Need a less specific selector to find the create button
     const controlStripCreateButtonSelector = '.p-control_strip[role="toolbar"] .p-control_strip__create_button';
     const controlStripCreateButton = await waitForElement(controlStripCreateButtonSelector);
-    log(SILENT, 'controlStripCreateButton', controlStripCreateButton);
+    log(DEBUG, 'controlStripCreateButton', controlStripCreateButton);
 
     const workspacesAddButton = controlStripCreateButton.cloneNode(true);
     log(DEBUG, 'workspacesAddButton', workspacesAddButton);
@@ -798,7 +799,7 @@
         const tabButton = buildTabButton(tabButtonParams);
         if (hideButton) {
           const setDisplay = () => {
-            log(SILENT, 'setDisplay()');
+            log(DEBUG, 'setDisplay()');
 
             const searching = window.location.href.includes('/search');
             const visibility = searching ? 'visible' : 'hidden';
