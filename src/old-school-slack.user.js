@@ -47,6 +47,7 @@
         home: {
           hide: true,
           createNavButton: false,
+          createNavButtonOnSearch: true,
         },
         dms: {
           createNavButton: true,
@@ -84,9 +85,11 @@
           createNavButton: false,
         },
       },
+    },
+    controlStrip: {
+      moveUp: false,
       createButton: {
         hide: true,
-        moveUp: false,
       },
       avatar: {
         moveToNav: true,
@@ -184,9 +187,8 @@
   }
 
   async function closeWorkspaceSwitcherModal() {
-    const modalOverlaySelector = '.ReactModal__Overlay';
-    await waitForElement(modalOverlaySelector);
-    document.querySelector(modalOverlaySelector)?.click();
+    const modalOverlay = await waitForElement('.ReactModal__Overlay')
+    modalOverlay?.click();
   }
 
   function openWorkspaceSwitcherDiscretely() {
@@ -213,7 +215,7 @@
   }
 
   async function getWorkspaceCount() {
-    log(SILENT, 'maybeHideWorkspaceSwitcher()');
+    log(DEBUG, 'maybeHideWorkspaceSwitcher()');
 
     const temporaryModalContentStyle = openWorkspaceSwitcherDiscretely();
 
@@ -221,7 +223,7 @@
     await waitForElement(workspacesSelector);
 
     const workspaceCount = document.querySelectorAll(workspacesSelector).length;
-    log(SILENT, 'workspaceCount', workspaceCount);
+    log(DEBUG, 'workspaceCount', workspaceCount);
 
     await closeWorkspaceSwitcherDiscretely(temporaryModalContentStyle);
 
@@ -231,10 +233,8 @@
   async function openAddWorkspaceDiscretely() {
     const createWorkspaceButtonStyle = openWorkspaceSwitcherDiscretely();
 
-    const workspacesAddButtonSelector = '.p-team_switcher_menu__item--add';
-    await waitForElement(workspacesAddButtonSelector);
-
-    document.querySelector(workspacesAddButtonSelector).click();
+    const workspacesAddButton = await waitForElement('.p-team_switcher_menu__item--add');
+    workspacesAddButton?.click();
 
     await closeWorkspaceSwitcherDiscretely(createWorkspaceButtonStyle);
   }
@@ -306,7 +306,7 @@
     document.body.appendChild(addWorkspaceButtonStyle);
 
     const thirdElementInTabRail = document.querySelector('.p-tab_rail > div:nth-child(3)')
-    log(QUIET, 'thirdElementInTabRail', thirdElementInTabRail);
+    log(DEBUG, 'thirdElementInTabRail', thirdElementInTabRail);
 
     const tabRail = thirdElementInTabRail.parentElement;
 
@@ -348,8 +348,11 @@
 
     const [workspaceAddDiv, innerDiv] = buildTabRailDiv();
 
-    const controlStripCreateButtonSelector = '.p-client_workspace__layout .p-control_strip[role="toolbar"] .p-control_strip__create_button';
-    const controlStripCreateButton = document.querySelector(controlStripCreateButtonSelector);
+    // Need a less specific selector to find the create button
+    const controlStripCreateButtonSelector = '.p-control_strip[role="toolbar"] .p-control_strip__create_button';
+    const controlStripCreateButton = await waitForElement(controlStripCreateButtonSelector);
+    log(SILENT, 'controlStripCreateButton', controlStripCreateButton);
+
     const workspacesAddButton = controlStripCreateButton.cloneNode(true);
     log(DEBUG, 'workspacesAddButton', workspacesAddButton);
 
@@ -364,17 +367,16 @@
     tabRail.insertBefore(workspaceAddDiv, thirdElementInTabRail);
   }
 
-  async function moveCreateButton() {
-    log(DEBUG, 'moveCreateButton()');
+  async function moveUpControlStrip() {
+    log(DEBUG, 'moveUpControlStrip()');
 
-    const moveCreateButtonStyleId = 'oss-move-create-button-style';
-    if (!document.getElementById(moveCreateButtonStyleId)) {
-      const moveCreateButtonStyle = document.createElement("style");
-      moveCreateButtonStyle.id = moveCreateButtonStyleId;
+    const moveUpControlStripStyleId = 'oss-move-create-button-style';
+    if (!document.getElementById(moveUpControlStripStyleId)) {
+      const moveUpControlStripStyle = document.createElement("style");
+      moveUpControlStripStyle.id = moveUpControlStripStyleId;
 
-      moveCreateButtonStyle.textContent += `
-        .p-client_workspace__layout .p-control_strip[role="toolbar"],
-        .p-control_strip[role="toolbar"] > div
+      moveUpControlStripStyle.textContent += `
+        .p-client_workspace__layout .p-control_strip[role="toolbar"]
         {
           display: none !important;
         }
@@ -396,7 +398,7 @@
         }
       `;
 
-      document.body.appendChild(moveCreateButtonStyle);
+      document.body.appendChild(moveUpControlStripStyle);
     }
 
     const controlStripToolbarSelector = '.p-client_workspace__layout .p-control_strip[role="toolbar"]';
@@ -411,7 +413,7 @@
 
     // Wait for a new instance to appear, which happens on tab change
     await waitForElement(controlStripToolbarSelector);
-    moveCreateButton();
+    moveUpControlStrip();
   }
 
   function hideCreateButton() {
@@ -502,107 +504,116 @@
     document.body.appendChild(hideSidebarStyle);
   }
 
-  function moveAvatar() {
+  async function moveAvatar(avatarDiv = null) {
     log(DEBUG, 'moveAvatar()');
 
-    const moveAvatarStyle = document.createElement("style");
-    moveAvatarStyle.id = "oss-move-avatar-style";
+    const moveAvatarStyleId = "oss-move-avatar-style";
+    if (!document.getElementById(moveAvatarStyleId)) {
+      const moveAvatarStyle = document.createElement("style");
+      moveAvatarStyle.id = moveAvatarStyleId;
 
-    const statusDiv = document.querySelector('[aria-label="Control strip"] > div');
-    if (!statusDiv) {
-      logError('Could not find status div');
-      return;
+      moveAvatarStyle.textContent += `
+        .ReactModal__Content:has(.p-ia__main_menu__user),
+        .ReactModal__Content:has(.p-control_strip__user_tooltip)
+        {
+          margin-top: 32px !important;
+        }
+
+        .p-ia__nav__user
+        {
+          display: flex;
+        }
+
+        .p-ia4_top_nav__right_container > div:nth-child(1)
+        {
+          margin-right: 5px;
+        }
+
+        .p-ia4_top_nav__right_container > div:nth-child(2),
+        .p-ia__nav__user__avatar > span.c-base_icon__width_only_container > img,
+        .p-ia__nav__user__avatar > span.c-base_icon__width_only_container
+        {
+          height: 28px !important;
+        }
+
+        .p-ia__nav__user__avatar > span.c-base_icon__width_only_container > img,
+        .p-ia__nav__user__avatar > span.c-base_icon__width_only_container
+        {
+          width: 28px !important;
+        }
+
+        .p-ia__nav__user__avatar
+        {
+          height: 28px !important;
+          width: 28px !important;
+          --avatar-image-size: 28px !important;
+        }
+
+        .p-ia__nav__user__status_icon
+        {
+          width: 28px;
+          height: 28px;
+          padding: 0 0 0 6px;
+          font-size: 14px;
+          line-height: 16px;
+          display: flex;
+          position: relative;
+          margin-right: -2px;
+          text-align: center;
+        }
+
+        .p-control_strip__circle_button
+        {
+          background-color: transparent;
+        }
+
+        .p-ia__nav__user__status_icon .c-emoji--inline
+        {
+          position: static;
+        }
+
+        .p-ia__nav__user__status_icon
+        {
+          position: relative;
+          background-color: transparent !important;
+          margin-left: 4px !important;
+        }
+
+        .p-ia__nav__user__status_icon::before {
+          content: "";
+          position: absolute;
+          top: 0;
+          left: 0;
+          width: 35px;
+          height: 100%;
+          background-color: white;
+          opacity: 0.25;
+          border-radius: 8px 0px 0px 8px;
+        }
+
+        [aria-label="Control strip"][role="toolbar"] > div:nth-child(2)
+        {
+          display: none !important;
+        }
+      `;
+
+      document.body.appendChild(moveAvatarStyle);
     }
 
+    const avatarDivSelector = '.p-client_workspace__layout .p-control_strip[role="toolbar"] > div';
+    if (!avatarDiv) avatarDiv = await waitForElement(avatarDivSelector);
+
+    const avatarId = 'oss-avatar-moved';
+    document.getElementById(avatarId)?.remove();
+    avatarDiv.id = avatarId;
+    log(DEBUG, 'avatarDiv', avatarDiv);
+
     const rightNav = document.querySelector(".p-ia4_top_nav__right_container");
-    rightNav.appendChild(statusDiv);
+    rightNav.appendChild(avatarDiv);
 
-    moveAvatarStyle.textContent += `
-      .ReactModal__Content:has(.p-ia__main_menu__user),
-      .ReactModal__Content:has(.p-control_strip__user_tooltip)
-      {
-        margin-top: 32px !important;
-      }
-
-      .p-ia__nav__user
-      {
-        display: flex;
-      }
-
-      .p-ia4_top_nav__right_container > div:nth-child(1)
-      {
-        margin-right: 5px;
-      }
-
-      .p-ia4_top_nav__right_container > div:nth-child(2),
-      .p-ia__nav__user__avatar > span.c-base_icon__width_only_container > img,
-      .p-ia__nav__user__avatar > span.c-base_icon__width_only_container
-      {
-        height: 28px !important;
-      }
-
-      .p-ia__nav__user__avatar > span.c-base_icon__width_only_container > img,
-      .p-ia__nav__user__avatar > span.c-base_icon__width_only_container
-      {
-        width: 28px !important;
-      }
-
-      .p-ia__nav__user__avatar
-      {
-        height: 28px !important;
-        width: 28px !important;
-        --avatar-image-size: 28px !important;
-      }
-
-      .p-ia__nav__user__status_icon
-      {
-        width: 28px;
-        height: 28px;
-        padding: 0 0 0 6px;
-        font-size: 14px;
-        line-height: 16px;
-        display: flex;
-        position: relative;
-        margin-right: -2px;
-        text-align: center;
-      }
-
-      .p-control_strip__circle_button
-      {
-        background-color: transparent;
-      }
-
-      .p-ia__nav__user__status_icon .c-emoji--inline
-      {
-        position: static;
-      }
-
-      .p-ia__nav__user__status_icon
-      {
-        position: relative;
-        background-color: transparent !important;
-        margin-left: 4px !important;
-      }
-
-      .p-ia__nav__user__status_icon::before {
-        content: "";
-        position: absolute;
-        top: 0;
-        left: 0;
-        width: 35px;
-        height: 100%;
-        background-color: white;
-        opacity: 0.25;
-        border-radius: 8px 0px 0px 8px;
-      }
-
-      [aria-label="Control strip"][role="toolbar"] > div:nth-child(2)
-      {
-        display: none !important;
-      }
-    `;
-
-    document.body.appendChild(moveAvatarStyle);
+    // Wait for a new instance to appear, which happens on tab change
+    const newAvatarDiv = await waitForElement(avatarDivSelector);
+    moveAvatar(newAvatarDiv);
   }
 
   function highlightWorkspaceSwitcher() {
@@ -662,11 +673,10 @@
     return outerDiv;
   }
 
-  function addCreateWorkspaceButtonToNav(historyNavigationSelector) {
+  function addCreateWorkspaceButtonToNav(historyNavigationDiv) {
     log(DEBUG, 'addCreateWorkspaceButtonToNav()');
 
-    const historyNavigation = document.querySelector(historyNavigationSelector);
-    const historyNavigationFirstChild = historyNavigation.firstChild;
+    const historyNavigationFirstChild = historyNavigationDiv.firstChild;
 
     const id = `oss-create-workspace-nav-tab`
     const name = 'Create workspace';
@@ -676,10 +686,10 @@
     };
 
     const tabButtonParams = { id, name, svg, onClick };
-    log(INFO, 'tabButtonParams', tabButtonParams);
+    log(DEBUG, 'tabButtonParams', tabButtonParams);
 
     const tabButton = buildTabButton(tabButtonParams);
-    historyNavigation.insertBefore(tabButton, historyNavigationFirstChild);
+    historyNavigationDiv.insertBefore(tabButton, historyNavigationFirstChild);
   }
 
   function setModalOffsets() {
@@ -709,7 +719,7 @@
     document.body.appendChild(modalStyle);
   }
 
-  function processTabUpdates({ tabListSelector, historyNavigationSelector, workspaceCount }) {
+  function processTabUpdates({ tabListDiv, historyNavigationDiv, workspaceCount }) {
     log(DEBUG, 'processTabUpdates()');
 
     const tabButtonsStyle = document.createElement("style");
@@ -719,7 +729,7 @@
     tabButtonsStyle.textContent = `
       .${tabButtonHiddenClass}
       {
-        display: none !important;
+        visibility: hidden !important;
       }
 
       .oss-tab-button
@@ -736,37 +746,32 @@
 
     document.head.appendChild(tabButtonsStyle);
 
-    const tabListDiv = document.querySelector(tabListSelector);
-    log(INFO, 'tabListDiv', tabListDiv);
-
-    if (!tabListDiv) {
-      logError(`Could not find ${tabListSelector}`);
-      return;
-    }
-
-    const historyNavigation = document.querySelector(historyNavigationSelector);
-
     // Find the first child before inserts occur
-    const historyNavigationFirstChild = historyNavigation.firstChild;
+    const historyNavigationFirstChild = historyNavigationDiv.firstChild;
     let tabsHiddenCount = 0;
 
     for (let tab of tabListDiv.children) {
-      log(INFO, 'tab', tab);
+      log(DEBUG, 'tab', tab);
 
       const name = tab.querySelector('.p-tab_rail__button__label').innerText;
       const tabConfig = CONFIG.sidebar.tabs[name?.toLowerCase()];
-      log(INFO, 'tabConfig', tabConfig);
+      log(DEBUG, 'tabConfig', tabConfig);
 
       if (!tabConfig) {
-        log(INFO, `Skipping tab: ${name}`);
+        log(INFO, 'Not creating nav button for tab', name);
         continue;
       } else {
         let hiddenHomeButton = false;
 
         if (
-          workspaceCount <= 1 &&
           name === 'Home' &&
-          CONFIG.sidebar.ifOneWorkspace.homeTab.createNavButtonOnSearch
+          (
+            CONFIG.sidebar.tabs.home.createNavButtonOnSearch ||
+            (
+              workspaceCount <= 1 &&
+              CONFIG.sidebar.ifOneWorkspace.homeTab.createNavButtonOnSearch
+            )
+          )
         ) {
           hiddenHomeButton = true;
         }
@@ -795,16 +800,16 @@
         };
 
         const tabButtonParams = { id, name, svg, onClick };
-        log(INFO, 'tabButtonParams', tabButtonParams);
+        log(DEBUG, 'tabButtonParams', tabButtonParams);
 
         const tabButton = buildTabButton(tabButtonParams);
         if (hiddenHomeButton) {
           const setDisplay = () => {
-            log(SILENT, 'setDisplay()');
+            log(DEBUG, 'setDisplay()');
 
             const searching = window.location.href.endsWith('/search');
-            const display = searching ? 'flex' : 'none';
-            tabButton.style.display = display;
+            const visibility = searching ? 'visible' : 'hidden';
+            tabButton.style.visibility = visibility;
           };
 
           setDisplay();
@@ -818,7 +823,7 @@
           observer.observe(document.body, { childList: true, subtree: true, characterData: true });
         }
 
-        historyNavigation.insertBefore(tabButton, historyNavigationFirstChild);
+        historyNavigationDiv.insertBefore(tabButton, historyNavigationFirstChild);
       }
     }
 
@@ -831,20 +836,17 @@
   }
 
   async function applyCustomizations() {
-    log(INFO, 'applyCustomizations()');
+    log(DEBUG, 'applyCustomizations()');
 
     if (CONFIG.workspace.squareOff) squareOffWorkspace();
     if (CONFIG.sidebar.hide) hideSidebar();
     if (CONFIG.sidebar.workspaceSwitcher.highlight) highlightWorkspaceSwitcher();
 
-    const tabListSelector = 'div.p-tab_rail__tab_menu[role="tablist"]';
-    const historyNavigationSelector = 'div[aria-label="History Navigation"]';
-
-    await waitForElement(tabListSelector);
-    await waitForElement(historyNavigationSelector);
+    const tabListDiv = await waitForElement('div.p-tab_rail__tab_menu[role="tablist"]');
+    const historyNavigationDiv = await waitForElement('div[aria-label="History Navigation"]');
 
     const workspaceCount = await getWorkspaceCount();
-    processTabUpdates({ tabListSelector, historyNavigationSelector, workspaceCount });
+    processTabUpdates({ tabListDiv, historyNavigationDiv, workspaceCount });
 
     if (!CONFIG.sidebar.hide) {
       let sidebarHidden = false;
@@ -858,20 +860,20 @@
         }
 
         if (CONFIG.sidebar.ifOneWorkspace.addWorkspaceButton.createNavButton) {
-          addCreateWorkspaceButtonToNav(historyNavigationSelector);
+          addCreateWorkspaceButtonToNav(historyNavigationDiv);
         }
       }
 
       if (!sidebarHidden) {
         if (CONFIG.sidebar.workspaceSwitcher.clickToGoHome) updateWorkspaceToGoHome();
         if (CONFIG.sidebar.workspaceSwitcher.addOtherWorkspaceButtons) addWorkspaceButtons();
-
-        if (CONFIG.sidebar.createButton.hide) hideCreateButton();
-        else if (CONFIG.sidebar.createButton.moveUp) moveCreateButton();
       }
+
+      if (CONFIG.controlStrip.createButton.hide) hideCreateButton();
+      if (CONFIG.controlStrip.moveUp) moveUpControlStrip();
     }
 
-    if (CONFIG.sidebar.avatar.moveToNav) moveAvatar();
+    if (CONFIG.controlStrip.avatar.moveToNav) moveAvatar();
 
     setModalOffsets();
 
