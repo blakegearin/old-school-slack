@@ -12,7 +12,6 @@
 // ==/UserScript==
 
 /* jshint esversion: 11 */
-/* global Promise */
 
 (function () {
   'use strict';
@@ -145,6 +144,16 @@
 
   log(QUIET, 'Starting');
 
+  const SELECTORS = {
+    workspaceSwitcher: '.p-account_switcher',
+    tabRail: '.p-tab_rail',
+    controlStripToolbar: '.p-client_workspace__layout .p-control_strip[role="toolbar"]',
+    workspacesTeams: '.p_team-switcher-menu__item__team .p_team-switcher-menu__item__team',
+    modalOverlay: '.ReactModal__Overlay',
+    workspacesAddButton: '.p-team_switcher_menu__item--add',
+    homeTabButton: '.p-tab_rail button[aria-label="Home"]',
+  };
+
   // Source: https://stackoverflow.com/a/61511955/5988852
   function waitForElement(selector) {
     return new Promise(resolve => {
@@ -168,23 +177,26 @@
   }
 
   function updateWorkspaceToGoHome() {
-    const workspaceSwitcher = document.querySelector('.p-account_switcher');
+    log(VERBOSE, 'updateWorkspaceToGoHome()');
+
+    const workspaceSwitcher = document.querySelector(SELECTORS.workspaceSwitcher);
     workspaceSwitcher.click();
     workspaceSwitcher.addEventListener('click', async () => {
-      const buttonSelector = '.p-tab_rail button[aria-label="Home"]';
-      document.querySelector(buttonSelector).click();
+      document.querySelector(SELECTORS.homeTabButton).click();
 
       await closeWorkspaceSwitcherModal();
     });
   }
 
   async function closeWorkspaceSwitcherModal() {
-    const modalOverlay = await waitForElement('.ReactModal__Overlay');
+    log(VERBOSE, 'openWorkspaceSwitcherDiscretely()');
+
+    const modalOverlay = await waitForElement(SELECTORS.modalOverlay);
     modalOverlay?.click();
   }
 
   function openWorkspaceSwitcherDiscretely() {
-    log(DEBUG, 'openWorkspaceSwitcherDiscretely()');
+    log(VERBOSE, 'openWorkspaceSwitcherDiscretely()');
 
     // Temporarily hide the workspace switcher modal
     const style = document.createElement('style');
@@ -193,28 +205,27 @@
     document.body.appendChild(style);
 
     // Open the workspace switcher modal
-    const originalWorkspaceSwitcher = document.querySelector('.p-account_switcher');
+    const originalWorkspaceSwitcher = document.querySelector(SELECTORS.workspaceSwitcher);
     originalWorkspaceSwitcher.click();
 
     return style;
   }
 
   async function closeWorkspaceSwitcherDiscretely(style) {
-    log(DEBUG, 'closeWorkspaceSwitcherDiscretely()');
+    log(VERBOSE, 'closeWorkspaceSwitcherDiscretely()');
 
     await closeWorkspaceSwitcherModal();
     style.remove();
   }
 
   async function getWorkspaceCount() {
-    log(DEBUG, 'maybeHideWorkspaceSwitcher()');
+    log(VERBOSE, 'maybeHideWorkspaceSwitcher()');
 
     const temporaryModalContentStyle = openWorkspaceSwitcherDiscretely();
 
-    const workspacesSelector = '.p_team-switcher-menu__item__team .p_team-switcher-menu__item__team';
-    await waitForElement(workspacesSelector);
+    await waitForElement(SELECTORS.workspacesTeams);
 
-    const workspaceCount = document.querySelectorAll(workspacesSelector).length;
+    const workspaceCount = document.querySelectorAll(SELECTORS.workspacesTeams).length;
     log(DEBUG, 'workspaceCount', workspaceCount);
 
     await closeWorkspaceSwitcherDiscretely(temporaryModalContentStyle);
@@ -225,21 +236,20 @@
   async function openAddWorkspaceDiscretely() {
     const createWorkspaceButtonStyle = openWorkspaceSwitcherDiscretely();
 
-    const workspacesAddButton = await waitForElement('.p-team_switcher_menu__item--add');
+    const workspacesAddButton = await waitForElement(SELECTORS.workspacesAddButton);
     workspacesAddButton?.click();
 
     await closeWorkspaceSwitcherDiscretely(createWorkspaceButtonStyle);
   }
 
   async function addWorkspaceButtons() {
-    log(DEBUG, 'addWorkspaceButtons()');
+    log(VERBOSE, 'addWorkspaceButtons()');
 
     const temporaryModalContentStyle = openWorkspaceSwitcherDiscretely();
 
-    const workspacesSelector = '.p_team-switcher-menu__item__team .p_team-switcher-menu__item__team';
-    await waitForElement(workspacesSelector);
+    await waitForElement(SELECTORS.workspacesTeams);
 
-    const workspaceDivs = Array.from(document.querySelectorAll(workspacesSelector));
+    const workspaceDivs = Array.from(document.querySelectorAll(SELECTORS.workspacesTeams));
     // Remove the first element, which is the current workspace
     workspaceDivs.shift();
 
@@ -259,24 +269,24 @@
     const addWorkspaceButtonStyle = document.createElement('style');
     addWorkspaceButtonStyle.id = 'oss-add-workspace-button-style';
     addWorkspaceButtonStyle.textContent += `
-      .p-tab_rail:has([data-qa="ellipsis-vertical-filled"]) .c-team_icon
+      ${SELECTORS.tabRail}:has([data-qa="ellipsis-vertical-filled"]) .c-team_icon
       {
         height: 24px !important;
         width: 24px !important;
         min-width: auto !important;
       }
 
-      .p-tab_rail:has([data-qa="ellipsis-vertical-filled"]) [role="tablist"] > div:last-child .p-tab_rail__button
+      ${SELECTORS.tabRail}:has([data-qa="ellipsis-vertical-filled"]) [role="tablist"] > div:last-child .p-tab_rail__button
       {
         margin-bottom: 0px !important;
       }
 
-      .p-tab_rail .p-team_switcher_menu__item--add
+      ${SELECTORS.tabRail} .p-team_switcher_menu__item--add
       {
         padding: 0px !important;
       }
 
-      .p-tab_rail .p-add_team_label > div:nth-child(2)
+      ${SELECTORS.tabRail} .p-add_team_label > div:nth-child(2)
       {
         display: none !important;
       }
@@ -297,7 +307,7 @@
     `;
     document.body.appendChild(addWorkspaceButtonStyle);
 
-    const thirdElementInTabRail = document.querySelector('.p-tab_rail > div:nth-child(3)');
+    const thirdElementInTabRail = document.querySelector(`${SELECTORS.tabRail} > div:nth-child(3)`);
     log(DEBUG, 'thirdElementInTabRail', thirdElementInTabRail);
 
     const tabRail = thirdElementInTabRail.parentElement;
@@ -341,7 +351,7 @@
     const [workspaceAddDiv, innerDiv] = buildTabRailDiv();
 
     // Need a less specific selector to find the create button
-    const controlStripCreateButtonSelector = '.p-control_strip[role="toolbar"] .p-control_strip__create_button';
+    const controlStripCreateButtonSelector = `${SELECTORS.controlStripToolbar} .p-control_strip__create_button`;
     const controlStripCreateButton = await waitForElement(controlStripCreateButtonSelector);
     log(DEBUG, 'controlStripCreateButton', controlStripCreateButton);
 
@@ -360,7 +370,7 @@
   }
 
   async function moveUpControlStrip() {
-    log(DEBUG, 'moveUpControlStrip()');
+    log(VERBOSE, 'moveUpControlStrip()');
 
     const moveUpControlStripStyleId = 'oss-move-create-button-style';
     if (!document.getElementById(moveUpControlStripStyleId)) {
@@ -393,23 +403,22 @@
       document.body.appendChild(moveUpControlStripStyle);
     }
 
-    const controlStripToolbarSelector = '.p-client_workspace__layout .p-control_strip[role="toolbar"]';
-    const controlStripToolbar = document.querySelector(controlStripToolbarSelector);
+    const controlStripToolbar = document.querySelector(SELECTORS.controlStripToolbar);
     log(DEBUG, 'controlStripToolbar', controlStripToolbar);
 
     const controlStripToolbarId = 'oss-control-strip-toolbar-moved';
     document.getElementById(controlStripToolbarId)?.remove();
     controlStripToolbar.id = controlStripToolbarId;
 
-    document.querySelector('.p-tab_rail').appendChild(controlStripToolbar);
+    document.querySelector(SELECTORS.tabRail).appendChild(controlStripToolbar);
 
     // Wait for a new instance to appear, which happens on tab change
-    await waitForElement(controlStripToolbarSelector);
+    await waitForElement(SELECTORS.controlStripToolbar);
     moveUpControlStrip();
   }
 
   function hideCreateButton() {
-    log(DEBUG, 'hideCreateButton()');
+    log(VERBOSE, 'hideCreateButton()');
 
     const hideCreateButtonStyle = document.createElement('style');
     hideCreateButtonStyle.id = 'oss-hide-create-button-style';
@@ -425,7 +434,7 @@
   }
 
   function squareOffWorkspace() {
-    log(DEBUG, 'squareOffWorkspace()');
+    log(VERBOSE, 'squareOffWorkspace()');
 
     const squareOffWorkspaceStyle = document.createElement('style');
     squareOffWorkspaceStyle.id = 'oss-expand-workspace-to-edge';
@@ -455,7 +464,7 @@
         border-top-left-radius: 0 !important;
       }
 
-      .p-tab_rail
+      ${SELECTORS.tabRail}
       {
         border-top: 1px solid var(--dt_color-otl-ter) !important;
         padding-top: 15px;
@@ -471,13 +480,13 @@
   }
 
   function hideSidebar() {
-    log(DEBUG, 'hideSidebar()');
+    log(VERBOSE, 'hideSidebar()');
 
     const hideSidebarStyle = document.createElement('style');
     hideSidebarStyle.id = 'oss-hide-sidebar-style';
 
     hideSidebarStyle.textContent += `
-      .p-tab_rail
+      ${SELECTORS.tabRail}
       {
         display: none !important;
       }
@@ -497,7 +506,7 @@
   }
 
   async function moveAvatar(avatarDiv = null) {
-    log(DEBUG, 'moveAvatar()');
+    log(VERBOSE, 'moveAvatar()');
 
     const moveAvatarStyleId = 'oss-move-avatar-style';
     if (!document.getElementById(moveAvatarStyleId)) {
@@ -592,7 +601,7 @@
       document.body.appendChild(moveAvatarStyle);
     }
 
-    const avatarDivSelector = '.p-client_workspace__layout .p-control_strip[role="toolbar"] > div';
+    const avatarDivSelector = `${SELECTORS.controlStripToolbar} > div`;
     if (!avatarDiv) avatarDiv = await waitForElement(avatarDivSelector);
 
     const avatarId = 'oss-avatar-moved';
@@ -609,13 +618,13 @@
   }
 
   function highlightWorkspaceSwitcher() {
-    log(DEBUG, 'highlightWorkspaceSwitcher()');
+    log(VERBOSE, 'highlightWorkspaceSwitcher()');
 
     const highlightWorkspaceSwitcherStyle = document.createElement('style');
     highlightWorkspaceSwitcherStyle.id = 'oss-highlight-workspace-switcher-style';
 
     highlightWorkspaceSwitcherStyle.textContent += `
-      .p-tab_rail:has([data-qa="ellipsis-horizontal-filled"]) > div:first-child .p-account_switcher
+      ${SELECTORS.tabRail}:has([data-qa="ellipsis-horizontal-filled"]) > div:first-child ${SELECTORS.workspaceSwitcher}
       {
         position: relative;
         height: 40px;
@@ -624,7 +633,7 @@
         box-shadow: 0px 0px 0px 2pt white;
       }
 
-      .p-tab_rail > div:first-child .p-account_switcher
+      ${SELECTORS.tabRail} > div:first-child ${SELECTORS.workspaceSwitcher}
       {
         position: relative;
         height: 28px;
@@ -633,7 +642,7 @@
         box-shadow: 0px 0px 0px 1.5pt white;
       }
 
-      .p-tab_rail > div:first-child .p-account_switcher i
+      ${SELECTORS.tabRail} > div:first-child ${SELECTORS.workspaceSwitcher} i
       {
         margin: 2px;
       }
@@ -666,7 +675,7 @@
   }
 
   function addCreateWorkspaceButtonToNav(historyNavigationDiv) {
-    log(DEBUG, 'addCreateWorkspaceButtonToNav()');
+    log(VERBOSE, 'addCreateWorkspaceButtonToNav()');
 
     const historyNavigationFirstChild = historyNavigationDiv.firstChild;
 
@@ -685,7 +694,7 @@
   }
 
   function setModalOffsets() {
-    log(DEBUG, 'setModalOffsets()');
+    log(VERBOSE, 'setModalOffsets()');
 
     const modalStyle = document.createElement('style');
 
@@ -712,7 +721,7 @@
   }
 
   function processTabUpdates({ tabListDiv, historyNavigationDiv, workspaceCount }) {
-    log(DEBUG, 'processTabUpdates()');
+    log(VERBOSE, 'processTabUpdates()');
 
     const tabButtonsStyle = document.createElement('style');
     tabButtonsStyle.id = 'oss-tab-buttons-style';
@@ -787,9 +796,9 @@
         observer.observe(svg, { childList: true, subtree: true });
 
         const ariaLabel = tab.tagName === 'BUTTON' ? tab.ariaLabel : tab.querySelector('button').ariaLabel;
-        const buttonSelector = `.p-tab_rail button[aria-label="${ariaLabel}"]`;
+        const buttonSelector = `${SELECTORS.tabRail} button[aria-label="${ariaLabel}"]`;
         const onClick = () => {
-          log(DEBUG, 'buttonSelector', buttonSelector);
+          log(VERBOSE, 'buttonSelector', buttonSelector);
           document.querySelector(buttonSelector).click();
         };
 
@@ -799,7 +808,7 @@
         const tabButton = buildTabButton(tabButtonParams);
         if (hideButton) {
           const setDisplay = () => {
-            log(DEBUG, 'setDisplay()');
+            log(VERBOSE, 'setDisplay()');
 
             const searching = window.location.href.includes('/search');
             const visibility = searching ? 'visible' : 'hidden';
@@ -831,11 +840,11 @@
     log(DEBUG, 'tabListDiv.children.length', tabListDiv.children.length);
     log(DEBUG, 'allTabsHidden', allTabsHidden);
 
-    if (allTabsHidden) tabButtonsStyle.textContent += '.p-tab_rail > div:nth-child(2) { display: none !important; }';
+    if (allTabsHidden) tabButtonsStyle.textContent += `${SELECTORS.tabRail} > div:nth-child(2) { display: none !important; }`;
   }
 
   async function applyCustomizations() {
-    log(DEBUG, 'applyCustomizations()');
+    log(VERBOSE, 'applyCustomizations()');
 
     if (CONFIG.workspace.squareOff) squareOffWorkspace();
     if (CONFIG.sidebar.hide) hideSidebar();
