@@ -43,7 +43,7 @@ This is a [userscript](https://openuserjs.org/about/Userscript-Beginners-HOWTO) 
 ## Usage
 
 1. Install a userscript manager like [Tampermonkey](https://www.tampermonkey.net), [Violentmonkey](https://violentmonkey.github.io), or [Greasemonkey](https://addons.mozilla.org/en-US/firefox/addon/greasemonkey/)
-1. Go to [GreasyFork](#) or [OpenUserJS](#)
+1. Go to [GreasyFork](https://greasyfork.org/en/scripts/534329-old-school-slack) or [OpenUserJS](https://openuserjs.org/scripts/blakegearin/Old_School_Slack)
 1. Click the install button
 1. The userscript will open in your userscript manager where you can install it
 
@@ -72,4 +72,12 @@ In August 2023, Slack announced and began rolling out a [redesign](https://slack
 
 - Archiving formatter: [Web Formatter](https://webformatter.com/html)
 
+## Disclaimer
+
 Not affiliated with Slack Technologies LLC, Salesforce, Inc., or any of their affiliations.
+
+## Related Projects
+
+Miss the old navigation of GitHub too? Check out my userscript: [GitHub Custom Global Navigation](https://github.com/blakegearin/github-custom-global-navigation#readme)
+
+Want to use the old Slack favicon? I'm working on a solution for that too: [Favicon Packs](https://github.com/blakegearin/favicon-packs#readme)
