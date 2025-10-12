@@ -1,11 +1,13 @@
 {
-  "main": "src/old-school-slack.user.js",
+  "main": "src/userscript/old-school-slack.user.js",
   "scripts": {
-    "lint": "eslint src/old-school-slack.user.js",
-    "clean": "eslint --fix src/old-school-slack.user.js",
-    "fix": "npm run clean && git add src/old-school-slack.user.js",
+    "lint": "eslint src/userscript/old-school-slack.user.js",
+    "clean": "eslint --fix src/userscript/old-school-slack.user.js",
+    "fix": "npm run clean && git add src/userscript/old-school-slack.user.js",
     "update-version": "bash helpers/update-version.sh",
-    "release": "bash helpers/release.sh"
+    "release": "bash helpers/release.sh",
+    "launch-desktop": "bash src/desktop/launch-slack.sh",
+    "update-desktop": "node src/desktop/modify-slack.js"
   },
   "devDependencies": {
     "eslint": "^9.25.1",

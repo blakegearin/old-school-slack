@@ -1,0 +1,16 @@
+{
+  "main": "src/old-school-slack.user.js",
+  "scripts": {
+    "apply": "node modify-slack.js",
+    "launch-and-apply": "./launch-slack.sh"
+  },
+  "dependencies": {
+    "ws": "^8.14.2"
+  },
+  "author": "Blake Gearin",
+  "license": "GPL-3.0-only",
+  "devDependencies": {
+    "eslint": "^9.25.1",
+    "eslint-plugin-userscripts": "^0.5.6"
+  }
+}

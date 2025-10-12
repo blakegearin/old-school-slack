@@ -31,6 +31,19 @@ This is a [userscript](https://openuserjs.org/about/Userscript-Beginners-HOWTO) 
   />
 </p>
 
+This can also be applied to the Slack desktop app on macOS through remote debugging. This command will launch, connect, and apply the userscript.
+
+```bash
+npm run launch-desktop
+```
+
+By default, a 3-second delay is added to allow the application to load. You can pass in a different delay amount as an argument.
+
+```bash
+# Example: 5 second delay
+npm run launch-desktop 5
+```
+
 ## Features
 
 - [x] Works out of the box with sensible defaults
@@ -71,6 +84,7 @@ In August 2023, Slack announced and began rolling out a [redesign](https://slack
 ## Credit
 
 - Archiving formatter: [Web Formatter](https://webformatter.com/html)
+- [David Ethell](https://github.com/dethell) (@dethell) for desktop script prototyping ([source](https://gist.github.com/Kenny-MWI/6b1a88ad38b5ffef347527a82becf054?permalink_comment_id=5784742#gistcomment-5784742))
 
 ## Disclaimer
 
