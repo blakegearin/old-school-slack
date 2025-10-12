@@ -6,7 +6,6 @@ function loadUserscriptCode() {
   const userscriptPath = path.join(
     __dirname,
     "..",
-    "..",
     "userscript",
     "old-school-slack.user.js"
   );
