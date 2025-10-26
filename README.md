@@ -94,4 +94,6 @@ Not affiliated with Slack Technologies LLC, Salesforce, Inc., or any of their af
 
 Miss the old navigation of GitHub too? Check out my userscript: [GitHub Custom Global Navigation](https://github.com/blakegearin/github-custom-global-navigation#readme)
 
+Miss the old design of YouTube's player too? Check out my userstyle: [Old School YouTube Player](https://github.com/blakegearin/old-school-youtube-player#readme)
+
 Want to use the old Slack favicon? I'm working on a solution for that too: [Favicon Packs](https://github.com/blakegearin/favicon-packs#readme)
